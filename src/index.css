@@ -2,39 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Menú Familiar Design System - Neutral-blue primary, green success, red conflicts, yellow warnings */
 
 @layer base {
   :root {
+    /* Base colors */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 213 13% 27%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 213 13% 27%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 213 13% 27%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Neutral blue for main actions */
+    --primary: 213 84% 51%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 213 84% 45%;
+    --primary-light: 213 84% 95%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Light neutral */
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 213 13% 27%;
+    --secondary-hover: 210 20% 92%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Success - Green for completed/ok states */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 95%;
+    --success-hover: 142 76% 30%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Warning - Yellow for alerts/cautions */
+    --warning: 38 92% 50%;
+    --warning-foreground: 213 13% 27%;
+    --warning-light: 38 92% 95%;
+    --warning-hover: 38 92% 45%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive - Red for conflicts/errors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 84% 95%;
+    --destructive-hover: 0 84% 54%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Neutral greys */
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
+    --muted-hover: 210 20% 92%;
+
+    --accent: 210 20% 96%;
+    --accent-foreground: 213 13% 27%;
+
+    /* UI Elements */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 213 84% 51%;
+
+    /* Calendar specific */
+    --calendar-cell: 0 0% 100%;
+    --calendar-cell-hover: 213 84% 98%;
+    --calendar-cell-occupied: 213 84% 95%;
+    --calendar-cell-conflict: 0 84% 95%;
+    --calendar-cell-selected: 213 84% 90%;
+
+    /* Meal type colors */
+    --breakfast-accent: 32 95% 44%; /* Orange */
+    --lunch-accent: 142 71% 45%; /* Green */
+    --dinner-accent: 271 91% 65%; /* Purple */
+
+    /* Budget colors */
+    --budget-ok: 142 76% 36%;
+    --budget-warning: 38 92% 50%;
+    --budget-exceeded: 0 84% 60%;
 
     --radius: 0.5rem;
 

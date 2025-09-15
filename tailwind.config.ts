@@ -22,18 +22,36 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
+          light: "hsl(var(--primary-light))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
+          hover: "hsl(var(--secondary-hover))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+          light: "hsl(var(--success-light))",
+          hover: "hsl(var(--success-hover))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+          light: "hsl(var(--warning-light))",
+          hover: "hsl(var(--warning-hover))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+          light: "hsl(var(--destructive-light))",
+          hover: "hsl(var(--destructive-hover))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
+          hover: "hsl(var(--muted-hover))",
         },
         accent: {
           DEFAULT: "hsl(var(--accent))",
@@ -46,6 +64,23 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        calendar: {
+          cell: "hsl(var(--calendar-cell))",
+          "cell-hover": "hsl(var(--calendar-cell-hover))",
+          "cell-occupied": "hsl(var(--calendar-cell-occupied))",
+          "cell-conflict": "hsl(var(--calendar-cell-conflict))",
+          "cell-selected": "hsl(var(--calendar-cell-selected))",
+        },
+        meal: {
+          breakfast: "hsl(var(--breakfast-accent))",
+          lunch: "hsl(var(--lunch-accent))",
+          dinner: "hsl(var(--dinner-accent))",
+        },
+        budget: {
+          ok: "hsl(var(--budget-ok))",
+          warning: "hsl(var(--budget-warning))",
+          exceeded: "hsl(var(--budget-exceeded))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
