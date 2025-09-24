@@ -50,6 +50,48 @@ export function WeeklyCalendar({
     onRecipeAssign?.(date, mealType, recipe);
   };
 
+  const generateShoppingList = () => {
+    const consolidatedIngredients = new Map<string, {
+      ingredient: any;
+      totalQuantity: number;
+      recipes: string[];
+    }>();
+
+    // Iterar sobre todas las comidas planificadas en las dos semanas
+    Object.entries(mealPlan).forEach(([date, dayMeals]) => {
+      Object.entries(dayMeals).forEach(([mealType, meal]) => {
+        if (!meal) return;
+
+        const { recipe, servings } = meal;
+        const servingRatio = servings / recipe.servingsBase;
+
+        recipe.ingredients.forEach(ingredient => {
+          const key = `${ingredient.name}-${ingredient.unit}`;
+          const scaledQuantity = ingredient.quantity * servingRatio;
+
+          if (consolidatedIngredients.has(key)) {
+            const existing = consolidatedIngredients.get(key)!;
+            existing.totalQuantity += scaledQuantity;
+            if (!existing.recipes.includes(recipe.name)) {
+              existing.recipes.push(recipe.name);
+            }
+          } else {
+            consolidatedIngredients.set(key, {
+              ingredient,
+              totalQuantity: scaledQuantity,
+              recipes: [recipe.name]
+            });
+          }
+        });
+      });
+    });
+
+    // En una app real, aquí se navegaría a la página de lista de compras
+    // y se pasarían los ingredientes consolidados
+    console.log('Lista de compras generada:', Array.from(consolidatedIngredients.entries()));
+    onGenerateShoppingList?.();
+  };
+
   const handleRecipeRemove = (date: string, mealType: MealType) => {
     const newMealPlan = { ...mealPlan };
     if (newMealPlan[date]) {
@@ -111,7 +153,7 @@ export function WeeklyCalendar({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={onGenerateShoppingList}
+                onClick={generateShoppingList}
                 className="gap-2"
               >
                 <ShoppingCart className="h-4 w-4" />
