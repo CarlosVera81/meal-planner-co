@@ -1,13 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { CalendarCell } from '@/components/calendar/CalendarCell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Copy, RotateCcw, ShoppingCart } from 'lucide-react';
+import { Copy, RotateCcw, ShoppingCart, Share2 } from 'lucide-react';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Recipe, MealType, MealPlan } from '@/types/recipe';
 import { mockRecipes } from '@/data/mockRecipes';
+import html2canvas from 'html2canvas';
+import { useToast } from '@/hooks/use-toast';
 
 interface WeeklyCalendarProps {
   startDate?: Date;
@@ -31,6 +33,8 @@ export function WeeklyCalendar({
 }: WeeklyCalendarProps) {
   const [selectedWeek, setSelectedWeek] = useState(0); // 0 = week 1, 1 = week 2
   const [mealPlan, setMealPlan] = useState<Record<string, Record<MealType, { recipe: Recipe; servings: number } | undefined>>>({});
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   
   const weekStart = useMemo(() => 
     startOfWeek(addDays(startDate, selectedWeek * 7), { weekStartsOn: 1 }), 
@@ -137,10 +141,72 @@ export function WeeklyCalendar({
     }, 0);
   };
 
+  const shareCalendarViaWhatsApp = async () => {
+    if (!calendarRef.current) return;
+
+    try {
+      toast({
+        title: "Generando imagen...",
+        description: "Preparando el calendario para compartir",
+      });
+
+      const canvas = await html2canvas(calendarRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        allowTaint: false,
+        height: calendarRef.current.scrollHeight,
+        width: calendarRef.current.scrollWidth
+      });
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `calendario-familiar-${format(weekStart, 'yyyy-MM-dd')}.png`;
+          link.href = url;
+          link.click();
+          
+          // Crear mensaje para WhatsApp
+          const totalMeals = getTotalMeals();
+          const totalCost = Object.values(mealPlan).reduce((total, dayMeals) => {
+            return total + Object.values(dayMeals).reduce((dayTotal, meal) => {
+              if (!meal) return dayTotal;
+              return dayTotal + meal.recipe.ingredients.reduce((sum, ing) => 
+                sum + (ing.pricePerUnit || 0) * ing.quantity / 1000, 0);
+            }, 0);
+          }, 0);
+          
+          const message = encodeURIComponent(
+            `🍽️ *Plan Familiar de Comidas* 🍽️\n\n` +
+            `📅 Desde: ${format(weekStart, 'dd/MM/yyyy', { locale: es })}\n` +
+            `🍴 Total comidas: ${totalMeals}\n` +
+            `💰 Costo estimado: $${Math.round(totalCost).toLocaleString('es-CL')}\n\n` +
+            `¡Revisa la imagen del calendario adjunta! 👆`
+          );
+          
+          const whatsappUrl = `https://wa.me/?text=${message}`;
+          window.open(whatsappUrl, '_blank');
+          
+          toast({
+            title: "¡Calendario listo!",
+            description: "Imagen descargada y WhatsApp abierto para compartir",
+          });
+        }
+      }, 'image/png', 0.95);
+    } catch (error) {
+      toast({
+        title: "Error al generar imagen",
+        description: "No se pudo crear la imagen del calendario",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Week Navigation */}
-      <Card>
+      <Card ref={calendarRef}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-2xl">
@@ -158,6 +224,15 @@ export function WeeklyCalendar({
               >
                 <ShoppingCart className="h-4 w-4" />
                 Generar Lista
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={shareCalendarViaWhatsApp}
+                className="gap-2"
+              >
+                <Share2 className="h-4 w-4" />
+                Compartir
               </Button>
             </div>
           </div>
