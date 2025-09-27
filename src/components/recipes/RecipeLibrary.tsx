@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, Filter, Clock, Users, DollarSign } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RecipeCard } from '@/components/recipes/RecipeCard';
 import { Recipe, MealType } from '@/types/recipe';
 import { mockRecipes } from '@/data/mockRecipes';
+import { RecipeDetail } from '@/components/recipes/RecipeDetail';
 
 interface RecipeLibraryProps {
   onRecipeSelect?: (recipe: Recipe) => void;
@@ -41,31 +42,31 @@ export function RecipeLibrary({
   const [selectedMealType, setSelectedMealType] = useState('all');
   const [selectedTimeRange, setSelectedTimeRange] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
   const filteredRecipes = useMemo(() => {
     return mockRecipes.filter(recipe => {
-      // Search term filter
-      if (searchTerm && !recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-          !recipe.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))) {
+      if (
+        searchTerm &&
+        !recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !recipe.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      ) {
         return false;
       }
 
-      // Difficulty filter
       if (selectedDifficulty !== 'Todas' && recipe.difficulty !== selectedDifficulty) {
         return false;
       }
 
-      // Meal type filter
       if (selectedMealType !== 'all' && !recipe.mealTypes.includes(selectedMealType as MealType)) {
         return false;
       }
 
-      // Time range filter
       if (selectedTimeRange !== 'all') {
         const [min, max] = selectedTimeRange.split('-').map(t => t.replace('+', ''));
         const minTime = parseInt(min);
         const maxTime = max ? parseInt(max) : Infinity;
-        
+
         if (recipe.timeMin < minTime || recipe.timeMin > maxTime) {
           return false;
         }
@@ -206,14 +207,27 @@ export function RecipeLibrary({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredRecipes.map((recipe) => (
-            <RecipeCard
-              key={recipe.id}
-              recipe={recipe}
-              onAdd={showAddButton ? onRecipeSelect : undefined}
-              isAdded={selectedRecipes.some(r => r.id === recipe.id)}
-            />
+            <div 
+              key={recipe.id} 
+              onClick={() => setSelectedRecipe(recipe)} 
+              className="cursor-pointer"
+            >
+              <RecipeCard
+                recipe={recipe}
+                onAdd={showAddButton ? onRecipeSelect : undefined}
+                isAdded={selectedRecipes.some(r => r.id === recipe.id)}
+              />
+            </div>
           ))}
         </div>
+      )}
+
+      {/* Modal Detalle */}
+      {selectedRecipe && (
+        <RecipeDetail 
+          recipe={selectedRecipe} 
+          onClose={() => setSelectedRecipe(null)} 
+        />
       )}
     </div>
   );
