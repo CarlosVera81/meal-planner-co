@@ -1,14 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import {
-  Calendar,
-  ChefHat,
-  ShoppingCart,
-  Package,
-  Settings,
-  Share2,
-  BarChart3,
-  ChevronDown,
-} from "lucide-react";
+import { Calendar, ChefHat, ShoppingCart, Package, Settings, Share2, BarChart3 } from "lucide-react";
 
 import {
   Sidebar,
@@ -21,11 +12,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 const mainItems = [
   { title: "Plan", url: "/", icon: Calendar },
@@ -54,8 +41,11 @@ export function AppSidebar() {
     }`;
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
-      <SidebarContent>
+    <Sidebar
+      className={`transition-[width] duration-300 ease-in-out ${collapsed ? "w-14" : "w-64"}`}
+      collapsible="icon"
+    >
+      <SidebarContent className={cn("transition-[gap] duration-300", collapsed && "!gap-1")}>
         {/* Header */}
         <div className="p-4 border-b">
           <div className="flex items-center gap-2">
@@ -72,8 +62,10 @@ export function AppSidebar() {
         </div>
 
         {/* Principal */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Principal</SidebarGroupLabel>
+        <SidebarGroup
+          className={cn("transition-[padding] duration-300", collapsed && "!px-1 !pt-1 !pb-1")}
+        >
+          {!collapsed && <SidebarGroupLabel>Principal</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map((item) => (
@@ -93,34 +85,23 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Herramientas (colapsable) */}
-        <SidebarGroup>
-          <Collapsible defaultOpen>
-            <CollapsibleTrigger className="flex w-full items-center justify-between px-2 py-1 text-sm font-medium hover:bg-muted rounded-md">
-              <span>Herramientas</span>
-              <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
-            </CollapsibleTrigger>
-
-            <CollapsibleContent className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {secondaryItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <NavLink
-                        to={item.url}
-                        end
-                        aria-label={item.title}
-                        className={getNavCls}
-                      >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </Collapsible>
+        {/* Herramientas */}
+        <SidebarGroup
+          className={cn("transition-[padding] duration-300", collapsed && "!px-1 !pt-0 !pb-1")}
+        >
+          {!collapsed && <SidebarGroupLabel>Herramientas</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {secondaryItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <NavLink to={item.url} end aria-label={item.title} className={getNavCls}>
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span>{item.title}</span>}
+                  </NavLink>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>

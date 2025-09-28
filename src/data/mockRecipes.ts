@@ -424,7 +424,7 @@ export const mockRecipes: Recipe[] = [
     tags: ['Italiano', 'Compartir'],
     allergens: ['gluten', 'lactosa'],
     calories: 500,
-    mealTypes: ['dinner'],
+  mealTypes: ['lunch', 'dinner'],
     imageUrl: pizzaImage,
     ingredients: [
       { id: '12-1', name: 'Masa para pizza', quantity: 300, unit: 'g', category: 'Abarrotes/Granos', pricePerUnit: 1200, allergens: ['gluten'] },
@@ -442,7 +442,7 @@ export const mockRecipes: Recipe[] = [
     tags: ['Saludable', 'Proteína'],
     allergens: ['pescado'],
     calories: 350,
-    mealTypes: ['dinner'],
+  mealTypes: ['lunch', 'dinner'],
     imageUrl: salmonImage,
     ingredients: [
       { id: '13-1', name: 'Filete de salmón', quantity: 2, unit: 'unidades', category: 'Pescados', pricePerUnit: 5000 },
@@ -459,7 +459,7 @@ export const mockRecipes: Recipe[] = [
     tags: ['Clásico', 'Fresco'],
     allergens: ['gluten', 'lactosa'],
     calories: 280,
-    mealTypes: ['dinner'],
+  mealTypes: ['lunch', 'dinner'],
     imageUrl: cesarImage,
     ingredients: [
       { id: '14-1', name: 'Lechuga romana', quantity: 1, unit: 'unidad', category: 'Verdulería', pricePerUnit: 900 },
@@ -479,7 +479,7 @@ export const mockRecipes: Recipe[] = [
     tags: ['Refrescante', 'Saludable'],
     allergens: ['lactosa'],
     calories: 150,
-    mealTypes: ['lunch', 'breakfast'],
+  mealTypes: ['breakfast', 'lunch', 'dinner'],
     imageUrl: batidoImage,
     ingredients: [
       { id: '15-1', name: 'Frutas variadas', quantity: 200, unit: 'g', category: 'Frutas', pricePerUnit: 1200 },
@@ -496,7 +496,7 @@ export const mockRecipes: Recipe[] = [
     tags: ['Vegano', 'Dip'],
     allergens: ['sésamo'],
     calories: 180,
-    mealTypes: ['lunch'],
+  mealTypes: ['lunch', 'dinner'],
     imageUrl: hummusImage,
     ingredients: [
       { id: '16-1', name: 'Garbanzos cocidos', quantity: 200, unit: 'g', category: 'Abarrotes/Granos', pricePerUnit: 1000 },
@@ -514,7 +514,7 @@ export const mockRecipes: Recipe[] = [
     tags: ['Rápido', 'Energético'],
     allergens: ['lactosa', 'gluten'],
     calories: 220,
-    mealTypes: ['lunch', 'breakfast'],
+  mealTypes: ['breakfast', 'lunch', 'dinner'],
     imageUrl: yogurtGranolaImage,
     ingredients: [
       { id: '17-1', name: 'Yogurt natural', quantity: 150, unit: 'ml', category: 'Lácteos/Huevos', pricePerUnit: 1000, allergens: ['lactosa'] },
@@ -531,7 +531,7 @@ export const mockRecipes: Recipe[] = [
     tags: ['Clásico', 'Snack'],
     allergens: ['gluten', 'lactosa'],
     calories: 300,
-    mealTypes: ['lunch', 'lunch'],
+  mealTypes: ['breakfast', 'lunch'],
     imageUrl: sandwichImage,
     ingredients: [
       { id: '18-1', name: 'Pan de molde', quantity: 2, unit: 'rebanadas', category: 'Abarrotes/Granos', pricePerUnit: 500, allergens: ['gluten'] },
@@ -549,7 +549,7 @@ export const mockRecipes: Recipe[] = [
     tags: ['Fresco', 'Saludable'],
     allergens: [],
     calories: 100,
-    mealTypes: ['lunch', 'breakfast'],
+  mealTypes: ['breakfast', 'lunch', 'dinner'],
     imageUrl: frutaPicadaImage,
     ingredients: [
       { id: '19-1', name: 'Frutas de temporada', quantity: 300, unit: 'g', category: 'Frutas', pricePerUnit: 1500 }
@@ -565,7 +565,7 @@ export const mockRecipes: Recipe[] = [
     tags: ['Snack', 'Compartir'],
     allergens: [],
     calories: 200,
-    mealTypes: ['lunch'],
+  mealTypes: ['lunch', 'dinner'],
     imageUrl: palomitasImage,
     ingredients: [
       { id: '20-1', name: 'Maíz para palomitas', quantity: 100, unit: 'g', category: 'Abarrotes/Granos', pricePerUnit: 800 },

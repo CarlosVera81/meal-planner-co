@@ -106,18 +106,34 @@
 
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-hover: 210 40% 90%;
+    --primary-light: 217.2 32.6% 20%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
+    --secondary-hover: 217.2 32.6% 22%;
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
+    --muted-hover: 217.2 32.6% 22%;
 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --success: 142 70% 38%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 50% 22%;
+    --success-hover: 142 70% 32%;
+
+    --warning: 38 92% 55%;
+    --warning-foreground: 210 40% 98%;
+    --warning-light: 38 60% 28%;
+    --warning-hover: 38 92% 48%;
+
+    --destructive: 0 72% 40%;
     --destructive-foreground: 210 40% 98%;
+    --destructive-light: 0 62% 24%;
+    --destructive-hover: 0 72% 35%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
@@ -130,6 +146,20 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --calendar-cell: 225 28% 14%;
+    --calendar-cell-hover: 225 28% 18%;
+    --calendar-cell-occupied: 225 28% 20%;
+    --calendar-cell-conflict: 0 62% 24%;
+    --calendar-cell-selected: 216 70% 32%;
+
+    --breakfast-accent: 32 90% 58%;
+    --lunch-accent: 142 55% 50%;
+    --dinner-accent: 271 65% 70%;
+
+    --budget-ok: 142 70% 38%;
+    --budget-warning: 38 92% 55%;
+    --budget-exceeded: 0 72% 40%;
   }
 }
 

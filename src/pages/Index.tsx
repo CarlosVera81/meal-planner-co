@@ -1,17 +1,14 @@
 import { WeeklyCalendar } from '@/components/planner/WeeklyCalendar';
-import { RecipeLibrary } from '@/components/recipes/RecipeLibrary';
-import { useState } from 'react';
-import { Recipe, MealType } from '@/types/recipe';
+import { MealType, Recipe, ShoppingListItem } from '@/types/recipe';
 import { useToast } from '@/hooks/use-toast';
+import { useMealPlanner } from '@/context/MealPlannerContext';
 
 const Index = () => {
-  const [selectedRecipes, setSelectedRecipes] = useState<Recipe[]>([]);
   const { toast } = useToast();
+  const { selectRecipe } = useMealPlanner();
 
   const handleRecipeAssign = (date: string, mealType: MealType, recipe: Recipe) => {
-    if (!selectedRecipes.some(r => r.id === recipe.id)) {
-      setSelectedRecipes(prev => [...prev, recipe]);
-    }
+    selectRecipe(recipe);
     
     toast({
       title: "Receta asignada",
@@ -26,21 +23,14 @@ const Index = () => {
     });
   };
 
-  const handleGenerateShoppingList = () => {
+  const handleGenerateShoppingList = (items: ShoppingListItem[]) => {
     toast({
       title: "Lista de compras generada",
-      description: "Tu lista de compras está lista. Ve a la sección 'Lista de Compras' para verla.",
+      description:
+        items.length > 0
+          ? "Tu lista de compras está lista. Ve a la sección 'Lista de Compras' para verla."
+          : "Agrega recetas al planificador para generar una lista automáticamente.",
     });
-  };
-
-  const handleRecipeSelect = (recipe: Recipe) => {
-    if (!selectedRecipes.some(r => r.id === recipe.id)) {
-      setSelectedRecipes(prev => [...prev, recipe]);
-      toast({
-        title: "Receta seleccionada",
-        description: `${recipe.name} está lista para ser arrastrada al calendario`,
-      });
-    }
   };
 
   return (
@@ -51,12 +41,6 @@ const Index = () => {
           onRecipeAssign={handleRecipeAssign}
           onRecipeRemove={handleRecipeRemove}
           onGenerateShoppingList={handleGenerateShoppingList}
-        />
-
-        {/* Recipe Library */}
-        <RecipeLibrary
-          onRecipeSelect={handleRecipeSelect}
-          selectedRecipes={selectedRecipes}
         />
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Search, Filter } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,9 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
-import { Recipe, MealType } from '@/types/recipe';
+import { Recipe } from '@/types/recipe';
 import { mockRecipes } from '@/data/mockRecipes';
 import { RecipeDetail } from '@/components/recipes/RecipeDetail';
+import {
+  calorieRanges,
+  difficultyOptions,
+  mealTypeOptions,
+  timeRanges,
+  useRecipeSearch,
+} from '@/hooks/useRecipeSearch';
 
 interface RecipeLibraryProps {
   onRecipeSelect?: (recipe: Recipe) => void;
@@ -16,79 +23,21 @@ interface RecipeLibraryProps {
   showAddButton?: boolean;
 }
 
-const difficultyOptions = ['Todas', 'Fácil', 'Medio', 'Difícil'];
-const mealTypeOptions = [
-  { value: 'all', label: 'Todas las comidas' },
-  { value: 'breakfast', label: 'Desayuno' },
-  { value: 'lunch', label: 'Almuerzo' },
-  { value: 'dinner', label: 'Cena' }
-];
-
-const timeRanges = [
-  { value: 'all', label: 'Cualquier tiempo' },
-  { value: '0-20', label: 'Menos de 20 min' },
-  { value: '20-45', label: '20-45 min' },
-  { value: '45-90', label: '45-90 min' },
-  { value: '90+', label: 'Más de 90 min' }
-];
-
 export function RecipeLibrary({ 
   onRecipeSelect, 
   selectedRecipes = [],
   showAddButton = true 
 }: RecipeLibraryProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDifficulty, setSelectedDifficulty] = useState('Todas');
-  const [selectedMealType, setSelectedMealType] = useState('all');
-  const [selectedTimeRange, setSelectedTimeRange] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-
-  const filteredRecipes = useMemo(() => {
-    return mockRecipes.filter(recipe => {
-      if (
-        searchTerm &&
-        !recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        !recipe.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      ) {
-        return false;
-      }
-
-      if (selectedDifficulty !== 'Todas' && recipe.difficulty !== selectedDifficulty) {
-        return false;
-      }
-
-      if (selectedMealType !== 'all' && !recipe.mealTypes.includes(selectedMealType as MealType)) {
-        return false;
-      }
-
-      if (selectedTimeRange !== 'all') {
-        const [min, max] = selectedTimeRange.split('-').map(t => t.replace('+', ''));
-        const minTime = parseInt(min);
-        const maxTime = max ? parseInt(max) : Infinity;
-
-        if (recipe.timeMin < minTime || recipe.timeMin > maxTime) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [searchTerm, selectedDifficulty, selectedMealType, selectedTimeRange]);
-
-  const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedDifficulty('Todas');
-    setSelectedMealType('all');
-    setSelectedTimeRange('all');
-  };
-
-  const activeFiltersCount = [
-    searchTerm,
-    selectedDifficulty !== 'Todas',
-    selectedMealType !== 'all',
-    selectedTimeRange !== 'all'
-  ].filter(Boolean).length;
+  const {
+    filters,
+    tags,
+    filteredRecipes,
+    updateFilter,
+    clearFilters,
+    activeFiltersCount,
+  } = useRecipeSearch({ recipes: mockRecipes });
 
   return (
     <div className="space-y-6">
@@ -122,8 +71,8 @@ export function RecipeLibrary({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar recetas, ingredientes o etiquetas..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={filters.searchTerm}
+              onChange={(e) => updateFilter('searchTerm', e.target.value)}
               className="pl-10"
             />
           </div>
@@ -131,7 +80,10 @@ export function RecipeLibrary({
           {/* Filters */}
           {showFilters && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
-              <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+              <Select
+                value={filters.difficulty}
+                onValueChange={(value) => updateFilter('difficulty', value as typeof filters.difficulty)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Dificultad" />
                 </SelectTrigger>
@@ -144,7 +96,10 @@ export function RecipeLibrary({
                 </SelectContent>
               </Select>
 
-              <Select value={selectedMealType} onValueChange={setSelectedMealType}>
+              <Select
+                value={filters.mealType}
+                onValueChange={(value) => updateFilter('mealType', value as typeof filters.mealType)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Tipo de comida" />
                 </SelectTrigger>
@@ -157,12 +112,45 @@ export function RecipeLibrary({
                 </SelectContent>
               </Select>
 
-              <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
+              <Select
+                value={filters.timeRange}
+                onValueChange={(value) => updateFilter('timeRange', value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Tiempo de cocción" />
                 </SelectTrigger>
                 <SelectContent>
                   {timeRanges.map(range => (
+                    <SelectItem key={range.value} value={range.value}>
+                      {range.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filters.tag} onValueChange={(value) => updateFilter('tag', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Etiqueta" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las etiquetas</SelectItem>
+                  {tags.map((tag) => (
+                    <SelectItem key={tag} value={tag}>
+                      {tag}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={filters.calorieRange}
+                onValueChange={(value) => updateFilter('calorieRange', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Calorías" />
+                </SelectTrigger>
+                <SelectContent>
+                  {calorieRanges.map((range) => (
                     <SelectItem key={range.value} value={range.value}>
                       {range.label}
                     </SelectItem>
@@ -210,12 +198,13 @@ export function RecipeLibrary({
             <div 
               key={recipe.id} 
               onClick={() => setSelectedRecipe(recipe)} 
-              className="cursor-pointer"
+              className="h-full cursor-pointer"
             >
               <RecipeCard
                 recipe={recipe}
                 onAdd={showAddButton ? onRecipeSelect : undefined}
                 isAdded={selectedRecipes.some(r => r.id === recipe.id)}
+                className="h-full"
               />
             </div>
           ))}

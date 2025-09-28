@@ -1,21 +1,34 @@
-import { useState, useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { CalendarCell } from '@/components/calendar/CalendarCell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { DayPlannerDrawer } from '@/components/planner/DayPlannerDrawer';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Copy, RotateCcw, ShoppingCart, Share2 } from 'lucide-react';
-import { format, addDays, startOfWeek } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Copy, RotateCcw, Share2, ShoppingCart } from 'lucide-react';
+import { addDays, format, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Recipe, MealType, MealPlan } from '@/types/recipe';
-import { mockRecipes } from '@/data/mockRecipes';
 import html2canvas from 'html2canvas';
+
+import { useMealPlanner } from '@/context/MealPlannerContext';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import { MealType, Recipe, ShoppingListItem } from '@/types/recipe';
 
 interface WeeklyCalendarProps {
   startDate?: Date;
   onRecipeAssign?: (date: string, mealType: MealType, recipe: Recipe) => void;
   onRecipeRemove?: (date: string, mealType: MealType) => void;
-  onGenerateShoppingList?: () => void;
+  onGenerateShoppingList?: (items: ShoppingListItem[]) => void;
 }
 
 const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner'];
@@ -32,9 +45,13 @@ export function WeeklyCalendar({
   onGenerateShoppingList
 }: WeeklyCalendarProps) {
   const [selectedWeek, setSelectedWeek] = useState(0); // 0 = week 1, 1 = week 2
-  const [mealPlan, setMealPlan] = useState<Record<string, Record<MealType, { recipe: Recipe; servings: number } | undefined>>>({});
   const calendarRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { mealPlan, assignMeal, removeMeal, updateMealServings, clearMealPlan, duplicateWeek, generateShoppingList } = useMealPlanner();
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
+  const [dayPlannerMealType, setDayPlannerMealType] = useState<MealType>('breakfast');
+  const [pendingWeekChange, setPendingWeekChange] = useState<{ direction: 'prev' | 'next'; targetWeek: number; targetIndex: number } | null>(null);
+  const totalWeeks = 2;
   
   const weekStart = useMemo(() => 
     startOfWeek(addDays(startDate, selectedWeek * 7), { weekStartsOn: 1 }), 
@@ -46,85 +63,97 @@ export function WeeklyCalendar({
     [weekStart]
   );
 
-  const handleRecipeAssign = (date: string, mealType: MealType, recipe: Recipe) => {
-    const newMealPlan = { ...mealPlan };
-    if (!newMealPlan[date]) newMealPlan[date] = {} as any;
-    newMealPlan[date][mealType] = { recipe, servings: 4 };
-    setMealPlan(newMealPlan);
+  const dayPlannerOpen = selectedDayIndex !== null;
+  const selectedDay = selectedDayIndex !== null ? weekDays[selectedDayIndex] : null;
+  const selectedDateKey = selectedDay ? format(selectedDay, 'yyyy-MM-dd') : null;
+
+  const selectedDayMeals = useMemo(() => {
+    if (!selectedDateKey) {
+      return {};
+    }
+    return mealPlan[selectedDateKey] ?? {};
+  }, [mealPlan, selectedDateKey]);
+
+  const handleOpenDayPlanner = (index: number, preferredMealType?: MealType) => {
+    const targetDate = weekDays[index];
+    const targetMeals = mealPlan[format(targetDate, 'yyyy-MM-dd')] ?? {};
+    const nextMealType =
+      preferredMealType ?? mealTypes.find((type) => !targetMeals[type]) ?? dayPlannerMealType;
+
+    setDayPlannerMealType(nextMealType);
+    setSelectedDayIndex(index);
+  };
+
+  const closeDayPlanner = () => {
+    setSelectedDayIndex(null);
+  };
+
+  const handleNavigateDay = (direction: 'prev' | 'next') => {
+    if (selectedDayIndex === null) return;
+
+    const nextIndex = direction === 'prev' ? selectedDayIndex - 1 : selectedDayIndex + 1;
+    if (nextIndex < 0) {
+      if (selectedWeek > 0) {
+        setPendingWeekChange({ direction, targetWeek: selectedWeek - 1, targetIndex: weekDays.length - 1 });
+      }
+      return;
+    }
+
+    if (nextIndex >= weekDays.length) {
+      if (selectedWeek < totalWeeks - 1) {
+        setPendingWeekChange({ direction, targetWeek: selectedWeek + 1, targetIndex: 0 });
+      }
+      return;
+    }
+
+    const targetDate = weekDays[nextIndex];
+    const targetMeals = mealPlan[format(targetDate, 'yyyy-MM-dd')] ?? {};
+    const nextMealType = mealTypes.find((type) => !targetMeals[type]) ?? dayPlannerMealType;
+
+    setDayPlannerMealType(nextMealType);
+    setSelectedDayIndex(nextIndex);
+  };
+
+  const canNavigatePrev = selectedDayIndex !== null && (selectedDayIndex > 0 || selectedWeek > 0);
+  const canNavigateNext = selectedDayIndex !== null && (selectedDayIndex < weekDays.length - 1 || selectedWeek < totalWeeks - 1);
+
+  const confirmWeekChange = () => {
+    if (!pendingWeekChange) return;
+
+    const { targetWeek, targetIndex } = pendingWeekChange;
+    const newWeekStart = startOfWeek(addDays(startDate, targetWeek * 7), { weekStartsOn: 1 });
+    const nextDate = addDays(newWeekStart, targetIndex);
+    const dateKey = format(nextDate, 'yyyy-MM-dd');
+    const targetMeals = mealPlan[dateKey] ?? {};
+    const nextMealType = mealTypes.find((type) => !targetMeals[type]) ?? dayPlannerMealType;
+
+    setSelectedWeek(targetWeek);
+    setSelectedDayIndex(targetIndex);
+    setDayPlannerMealType(nextMealType);
+    setPendingWeekChange(null);
+  };
+
+  const cancelWeekChange = () => {
+    setPendingWeekChange(null);
+  };
+
+  const handleRecipeAssign = (date: string, mealType: MealType, recipe: Recipe, servings?: number) => {
+    assignMeal(date, mealType, recipe, servings ?? recipe.servingsBase);
     onRecipeAssign?.(date, mealType, recipe);
   };
 
-  const generateShoppingList = () => {
-    const consolidatedIngredients = new Map<string, {
-      ingredient: any;
-      totalQuantity: number;
-      recipes: string[];
-    }>();
-
-    // Iterar sobre todas las comidas planificadas en las dos semanas
-    Object.entries(mealPlan).forEach(([date, dayMeals]) => {
-      Object.entries(dayMeals).forEach(([mealType, meal]) => {
-        if (!meal) return;
-
-        const { recipe, servings } = meal;
-        const servingRatio = servings / recipe.servingsBase;
-
-        recipe.ingredients.forEach(ingredient => {
-          const key = `${ingredient.name}-${ingredient.unit}`;
-          const scaledQuantity = ingredient.quantity * servingRatio;
-
-          if (consolidatedIngredients.has(key)) {
-            const existing = consolidatedIngredients.get(key)!;
-            existing.totalQuantity += scaledQuantity;
-            if (!existing.recipes.includes(recipe.name)) {
-              existing.recipes.push(recipe.name);
-            }
-          } else {
-            consolidatedIngredients.set(key, {
-              ingredient,
-              totalQuantity: scaledQuantity,
-              recipes: [recipe.name]
-            });
-          }
-        });
-      });
-    });
-
-    // En una app real, aquí se navegaría a la página de lista de compras
-    // y se pasarían los ingredientes consolidados
-    console.log('Lista de compras generada:', Array.from(consolidatedIngredients.entries()));
-    onGenerateShoppingList?.();
+  const handleGenerateShoppingList = () => {
+    const items = generateShoppingList();
+    onGenerateShoppingList?.(items);
   };
 
   const handleRecipeRemove = (date: string, mealType: MealType) => {
-    const newMealPlan = { ...mealPlan };
-    if (newMealPlan[date]) {
-      delete newMealPlan[date][mealType];
-      if (Object.keys(newMealPlan[date]).length === 0) {
-        delete newMealPlan[date];
-      }
-    }
-    setMealPlan(newMealPlan);
+    removeMeal(date, mealType);
     onRecipeRemove?.(date, mealType);
   };
 
-  const duplicateWeek = () => {
-    const newMealPlan = { ...mealPlan };
-    const sourceWeekStart = selectedWeek === 0 ? weekStart : startOfWeek(startDate, { weekStartsOn: 1 });
-    const targetWeekStart = selectedWeek === 0 
-      ? addDays(weekStart, 7) 
-      : weekStart;
-
-    weekDays.forEach((_, dayIndex) => {
-      const sourceDate = format(addDays(sourceWeekStart, dayIndex), 'yyyy-MM-dd');
-      const targetDate = format(addDays(targetWeekStart, dayIndex), 'yyyy-MM-dd');
-      
-      if (newMealPlan[sourceDate]) {
-        newMealPlan[targetDate] = { ...newMealPlan[sourceDate] };
-      }
-    });
-
-    setMealPlan(newMealPlan);
+  const handleDuplicateWeek = () => {
+    duplicateWeek({ startDate, selectedWeek });
   };
 
   const getTotalMeals = () => {
@@ -219,7 +248,7 @@ export function WeeklyCalendar({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={generateShoppingList}
+                onClick={handleGenerateShoppingList}
                 className="gap-2"
               >
                 <ShoppingCart className="h-4 w-4" />
@@ -242,7 +271,10 @@ export function WeeklyCalendar({
               <Button
                 variant={selectedWeek === 0 ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedWeek(0)}
+                onClick={() => {
+                  setSelectedWeek(0);
+                  closeDayPlanner();
+                }}
               >
                 Semana 1
                 <Badge variant="secondary" className="ml-2">
@@ -256,7 +288,10 @@ export function WeeklyCalendar({
               <Button
                 variant={selectedWeek === 1 ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedWeek(1)}
+                onClick={() => {
+                  setSelectedWeek(1);
+                  closeDayPlanner();
+                }}
               >
                 Semana 2
                 <Badge variant="secondary" className="ml-2">
@@ -273,7 +308,7 @@ export function WeeklyCalendar({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={duplicateWeek}
+                onClick={handleDuplicateWeek}
                 className="gap-2"
               >
                 <Copy className="h-4 w-4" />
@@ -282,7 +317,7 @@ export function WeeklyCalendar({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setMealPlan({})}
+                onClick={clearMealPlan}
                 className="gap-2"
               >
                 <RotateCcw className="h-4 w-4" />
@@ -301,16 +336,34 @@ export function WeeklyCalendar({
             <div className="font-medium text-sm text-muted-foreground">
               Comida
             </div>
-            {weekDays.map((day) => (
-              <div key={day.toString()} className="text-center">
-                <div className="font-medium text-sm">
-                  {format(day, 'EEEE', { locale: es })}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {format(day, 'dd/MM')}
-                </div>
-              </div>
-            ))}
+            {weekDays.map((day, index) => {
+              const dateKey = format(day, 'yyyy-MM-dd');
+              const dayMeals = mealPlan[dateKey];
+              const assignedCount = dayMeals ? Object.keys(dayMeals).length : 0;
+              const isSelected = selectedDayIndex === index;
+
+              return (
+                <button
+                  key={day.toString()}
+                  type="button"
+                  onClick={() => handleOpenDayPlanner(index)}
+                  className={cn(
+                    'flex w-full flex-col items-center rounded-md border border-transparent p-2 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                    isSelected ? 'border-primary bg-primary/10 shadow-sm' : 'hover:border-primary hover:bg-muted/60'
+                  )}
+                  aria-pressed={isSelected}
+                  aria-label={`Planificar ${format(day, 'EEEE', { locale: es })}`}
+                >
+                  <span className="text-sm font-medium capitalize">
+                    {format(day, 'EEEE', { locale: es })}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{format(day, 'dd/MM')}</span>
+                  <Badge variant={assignedCount === mealTypes.length ? 'default' : 'outline'} className="mt-1 text-[11px]">
+                    {assignedCount}/{mealTypes.length}
+                  </Badge>
+                </button>
+              );
+            })}
 
             {/* Meal Rows */}
             {mealTypes.map((mealType) => (
@@ -334,9 +387,9 @@ export function WeeklyCalendar({
                           sum + (ing.pricePerUnit || 0) * ing.quantity / 1000, 0)),
                         allergens: dayMeal.recipe.allergens
                       } : undefined}
-                      onDrop={(recipe) => handleRecipeAssign(dateKey, mealType, recipe)}
+                      onAssign={(recipe) => handleRecipeAssign(dateKey, mealType, recipe)}
                       onRemove={() => handleRecipeRemove(dateKey, mealType)}
-                      hasConflict={dayMeal?.recipe?.allergens.includes('gluten')} // Mock conflict
+                      hasConflict={dayMeal?.recipe?.allergens?.includes('gluten')} // Mock conflict
                     />
                   );
                 })}
@@ -345,6 +398,68 @@ export function WeeklyCalendar({
           </div>
         </CardContent>
       </Card>
+
+      {selectedDay && selectedDateKey && (
+        <DayPlannerDrawer
+          open={dayPlannerOpen}
+          date={selectedDay}
+          activeMealType={dayPlannerMealType}
+          dayMeals={selectedDayMeals}
+          onOpenChange={(open) => {
+            if (!open) {
+              closeDayPlanner();
+            }
+          }}
+          onMealTypeChange={(mealType) => setDayPlannerMealType(mealType)}
+          onAssign={(mealType, recipe) => {
+            handleRecipeAssign(selectedDateKey, mealType, recipe);
+
+            const upcomingMeals = { ...(mealPlan[selectedDateKey] ?? {}) };
+            upcomingMeals[mealType] = {
+              recipe,
+              servings: recipe.servingsBase,
+            };
+
+            const nextMealType = mealTypes.find((type) => !upcomingMeals[type]);
+            if (nextMealType) {
+              setDayPlannerMealType(nextMealType);
+            }
+          }}
+          onRemove={(mealType) => {
+            handleRecipeRemove(selectedDateKey, mealType);
+          }}
+          onServingsChange={(mealType, servings) => {
+            updateMealServings(selectedDateKey, mealType, servings);
+          }}
+          onNavigateDay={handleNavigateDay}
+          canNavigatePrev={canNavigatePrev}
+          canNavigateNext={canNavigateNext}
+        />
+      )}
+
+      <AlertDialog
+        open={pendingWeekChange !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            cancelWeekChange();
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cambiar de semana</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingWeekChange?.direction === 'next'
+                ? `¿Quieres ir a la semana ${((pendingWeekChange?.targetWeek ?? 0) + 1).toString()} para seguir planificando?`
+                : `¿Quieres volver a la semana ${((pendingWeekChange?.targetWeek ?? 0) + 1).toString()}?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelWeekChange}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmWeekChange}>Continuar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
