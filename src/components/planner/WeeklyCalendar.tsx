@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CalendarCell } from '@/components/calendar/CalendarCell';
 import { DayPlannerDrawer } from '@/components/planner/DayPlannerDrawer';
 import {
@@ -14,10 +14,19 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader as BaseDialogHeader,
+  DialogTitle as BaseDialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Copy, RotateCcw, Share2, ShoppingCart } from 'lucide-react';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
-import html2canvas from 'html2canvas';
 
 import { useMealPlanner } from '@/context/MealPlannerContext';
 import { useToast } from '@/hooks/use-toast';
@@ -45,7 +54,7 @@ export function WeeklyCalendar({
   onGenerateShoppingList
 }: WeeklyCalendarProps) {
   const [selectedWeek, setSelectedWeek] = useState(0); // 0 = week 1, 1 = week 2
-  const calendarRef = useRef<HTMLDivElement>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const { toast } = useToast();
   const { mealPlan, assignMeal, removeMeal, updateMealServings, clearMealPlan, duplicateWeek, generateShoppingList } = useMealPlanner();
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
@@ -170,72 +179,107 @@ export function WeeklyCalendar({
     }, 0);
   };
 
-  const shareCalendarViaWhatsApp = async () => {
-    if (!calendarRef.current) return;
+  const formatCurrency = (value: number) => `$${Math.round(value).toLocaleString('es-CL')}`;
 
-    try {
-      toast({
-        title: "Generando imagen...",
-        description: "Preparando el calendario para compartir",
-      });
+  const computeRecipeCost = (recipe: Recipe) =>
+    recipe.ingredients.reduce(
+      (total, ingredient) => total + ((ingredient.pricePerUnit || 0) * ingredient.quantity) / 1000,
+      0,
+    );
 
-      const canvas = await html2canvas(calendarRef.current, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        allowTaint: false,
-        height: calendarRef.current.scrollHeight,
-        width: calendarRef.current.scrollWidth
-      });
-      
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.download = `calendario-familiar-${format(weekStart, 'yyyy-MM-dd')}.png`;
-          link.href = url;
-          link.click();
-          
-          // Crear mensaje para WhatsApp
-          const totalMeals = getTotalMeals();
-          const totalCost = Object.values(mealPlan).reduce((total, dayMeals) => {
-            return total + Object.values(dayMeals).reduce((dayTotal, meal) => {
-              if (!meal) return dayTotal;
-              return dayTotal + meal.recipe.ingredients.reduce((sum, ing) => 
-                sum + (ing.pricePerUnit || 0) * ing.quantity / 1000, 0);
-            }, 0);
-          }, 0);
-          
-          const message = encodeURIComponent(
-            `🍽️ *Plan Familiar de Comidas* 🍽️\n\n` +
-            `📅 Desde: ${format(weekStart, 'dd/MM/yyyy', { locale: es })}\n` +
-            `🍴 Total comidas: ${totalMeals}\n` +
-            `💰 Costo estimado: $${Math.round(totalCost).toLocaleString('es-CL')}\n\n` +
-            `¡Revisa la imagen del calendario adjunta! 👆`
-          );
-          
-          const whatsappUrl = `https://wa.me/?text=${message}`;
-          window.open(whatsappUrl, '_blank');
-          
-          toast({
-            title: "¡Calendario listo!",
-            description: "Imagen descargada y WhatsApp abierto para compartir",
-          });
+  const capitalize = (value: string) => (value ? value.charAt(0).toUpperCase() + value.slice(1) : value);
+
+  const buildWeekShareBlock = (weekIndex: number) => {
+    const weekStartDate = startOfWeek(addDays(startDate, weekIndex * 7), { weekStartsOn: 1 });
+    const weekEndDate = addDays(weekStartDate, 6);
+    const days = Array.from({ length: 7 }, (_, i) => addDays(weekStartDate, i));
+
+    let weekAssignedMeals = 0;
+    let weekCost = 0;
+
+    const daySections = days.map((day) => {
+      const dateKey = format(day, 'yyyy-MM-dd');
+      const dayMeals = mealPlan[dateKey] ?? {};
+      let dayAssigned = 0;
+
+      const mealLines = mealTypes.map((mealType) => {
+        const entry = dayMeals[mealType];
+        if (entry?.recipe) {
+          dayAssigned += 1;
+          weekAssignedMeals += 1;
+          const recipeCost = computeRecipeCost(entry.recipe);
+          weekCost += recipeCost;
+          const servingsInfo = entry.servings ? ` (${entry.servings} porciones)` : '';
+          const costInfo = recipeCost > 0 ? ` · ${formatCurrency(recipeCost)}` : '';
+          return `• ${mealTypeLabels[mealType]}: ${entry.recipe.name}${servingsInfo}${costInfo}`;
         }
-      }, 'image/png', 0.95);
-    } catch (error) {
-      toast({
-        title: "Error al generar imagen",
-        description: "No se pudo crear la imagen del calendario",
-        variant: "destructive"
+
+        return `• ${mealTypeLabels[mealType]}: Sin receta`;
       });
-    }
+
+      mealLines.push(`↪ ${dayAssigned}/${mealTypes.length} comidas planificadas`);
+
+      const dayLabel = capitalize(format(day, 'EEEE d/MM', { locale: es }));
+        return `${dayLabel}
+    ${mealLines.join('\n  ')}`;
+      });
+
+      const summary = `Resumen semana ${weekIndex + 1}: ${weekAssignedMeals}/${mealTypes.length * 7} comidas planificadas${
+        weekCost > 0 ? ` · Costo aprox: ${formatCurrency(weekCost)}` : ''
+      }`;
+
+    return {
+      header: `Semana ${weekIndex + 1} · ${format(weekStartDate, 'dd/MM')} - ${format(weekEndDate, 'dd/MM')}`,
+      body: daySections,
+      summary,
+    };
   };
 
+  const shareCalendarViaWhatsApp = (scope: 'current' | 'all') => {
+    const targetWeeks = scope === 'all'
+      ? Array.from({ length: totalWeeks }, (_, index) => index)
+      : [selectedWeek];
+
+    const blocks = targetWeeks.map(buildWeekShareBlock);
+    const blockMessages = blocks.map((block) => {
+      const sections = [`📆 *${block.header}*`, ...block.body, block.summary];
+      return sections.join('\n\n');
+    });
+
+    const messageParts = [
+      '🍽️ *Plan Familiar de Comidas*',
+      `Generado el ${format(new Date(), 'dd/MM/yyyy', { locale: es })}`,
+      ...blockMessages,
+    ];
+
+    const message = messageParts.filter(Boolean).join('\n\n');
+
+    if (!message) {
+      toast({
+        title: 'No hay información para compartir',
+        description: 'Planifica al menos una comida antes de compartir.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+
+    toast({
+      title: 'Abriendo WhatsApp',
+      description:
+        scope === 'all'
+          ? 'Mensaje con ambas semanas listo para enviar.'
+          : `Mensaje de la semana ${selectedWeek + 1} listo para enviar.`,
+    });
+
+    setShareDialogOpen(false);
+  };
   return (
     <div className="space-y-6">
       {/* Week Navigation */}
-      <Card ref={calendarRef}>
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-2xl">
@@ -254,15 +298,56 @@ export function WeeklyCalendar({
                 <ShoppingCart className="h-4 w-4" />
                 Generar Lista
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={shareCalendarViaWhatsApp}
-                className="gap-2"
-              >
-                <Share2 className="h-4 w-4" />
-                Compartir
-              </Button>
+              <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    Compartir
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <BaseDialogHeader>
+                    <BaseDialogTitle>Compartir calendario</BaseDialogTitle>
+                    <DialogDescription>
+                      Elige si quieres compartir solo la semana actual o las dos semanas planificadas.
+                    </DialogDescription>
+                  </BaseDialogHeader>
+                  <div className="grid gap-3 py-2">
+                    <Button
+                      className="justify-start gap-2"
+                      onClick={() => shareCalendarViaWhatsApp('current')}
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Compartir semana {selectedWeek + 1}
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {getWeekMeals()} comidas
+                      </span>
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="justify-start gap-2"
+                      onClick={() => shareCalendarViaWhatsApp('all')}
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Compartir ambas semanas
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {getTotalMeals()} comidas
+                      </span>
+                    </Button>
+                  </div>
+                  <DialogFooter className="sm:justify-between">
+                    <DialogClose asChild>
+                      <Button variant="ghost" className="w-full sm:w-auto">
+                        Cancelar
+                      </Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           
