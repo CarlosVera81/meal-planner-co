@@ -456,7 +456,7 @@ export function WeeklyCalendar({
                 <div className="flex items-center justify-center py-4 font-medium text-sm bg-muted rounded-md">
                   {mealTypeLabels[mealType]}
                 </div>
-                {weekDays.map((day) => {
+                {weekDays.map((day, dayIndex) => {
                   const dateKey = format(day, 'yyyy-MM-dd');
                   const dayMeal = mealPlan[dateKey]?.[mealType];
                   
@@ -472,8 +472,8 @@ export function WeeklyCalendar({
                           sum + (ing.pricePerUnit || 0) * ing.quantity / 1000, 0)),
                         allergens: dayMeal.recipe.allergens
                       } : undefined}
-                      onAssign={(recipe) => handleRecipeAssign(dateKey, mealType, recipe)}
                       onRemove={() => handleRecipeRemove(dateKey, mealType)}
+                      onOpen={() => handleOpenDayPlanner(dayIndex, mealType)}
                       hasConflict={dayMeal?.recipe?.allergens?.includes('gluten')} // Mock conflict
                     />
                   );

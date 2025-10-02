@@ -1,11 +1,8 @@
-import { useState } from "react";
 import { AlertTriangle, Clock, DollarSign, Users } from "lucide-react";
 
-import { RecipeSelectorPanel } from "@/components/recipes/RecipeSelectorPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { MealType, Recipe } from "@/types/recipe";
 
@@ -18,11 +15,11 @@ interface CalendarCellProps {
     cost?: number;
     allergens?: string[];
   };
-  onAssign: (recipe: Recipe) => void;
   onRemove?: () => void;
   className?: string;
   hasConflict?: boolean;
   isSelected?: boolean;
+  onOpen?: () => void;
 }
 
 const mealTypeLabels: Record<MealType, string> = {
@@ -42,114 +39,100 @@ export function CalendarCell({
   assignedRecipe,
   servings,
   badges,
-  onAssign,
   onRemove,
   className,
   hasConflict = false,
   isSelected = false,
+  onOpen,
 }: CalendarCellProps) {
-  const [open, setOpen] = useState(false);
   const isEmpty = !assignedRecipe;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Card
-          className={cn(
-            "min-h-[120px] cursor-pointer border-l-4 p-3 shadow-sm transition-all duration-200 hover:shadow-md",
-            mealTypeColors[mealType],
-            isEmpty && "bg-calendar-cell hover:bg-calendar-cell-hover",
-            !isEmpty && "bg-calendar-cell-occupied",
-            hasConflict && "border-destructive bg-destructive-light",
-            isSelected && "bg-calendar-cell-selected ring-2 ring-primary",
-            className,
+    <Card
+      className={cn(
+        "min-h-[120px] cursor-pointer border-l-4 p-3 shadow-sm transition-all duration-200 hover:shadow-md",
+        mealTypeColors[mealType],
+        isEmpty && "bg-calendar-cell hover:bg-calendar-cell-hover",
+        !isEmpty && "bg-calendar-cell-occupied",
+        hasConflict && "border-destructive bg-destructive-light",
+        isSelected && "bg-calendar-cell-selected ring-2 ring-primary",
+        className,
+      )}
+      role="button"
+      tabIndex={0}
+      aria-label={`${mealTypeLabels[mealType]} - ${assignedRecipe ? assignedRecipe.name : "Vacío"}`}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen?.();
+        }
+      }}
+    >
+      <div className="flex h-full flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <Badge variant="outline" className="text-xs">
+            {mealTypeLabels[mealType]}
+          </Badge>
+          {servings && (
+            <Badge variant="secondary" className="text-xs">
+              <Users className="mr-1 h-3 w-3" />
+              {servings}
+            </Badge>
           )}
-          role="button"
-          tabIndex={0}
-          aria-label={`${mealTypeLabels[mealType]} - ${assignedRecipe ? assignedRecipe.name : "Vacío"}`}
-        >
-          <div className="flex h-full flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-xs">
-                {mealTypeLabels[mealType]}
-              </Badge>
-              {servings && (
+        </div>
+
+        {isEmpty ? (
+          <div className="flex flex-1 items-center justify-center text-center">
+            <p className="text-sm text-muted-foreground">Haz clic para planificar esta comida</p>
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col gap-2">
+            <div className="flex items-start justify-between">
+              <h4 className="text-sm font-medium leading-tight">{assignedRecipe.name}</h4>
+              {onRemove && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRemove();
+                  }}
+                  className="h-6 w-6 p-0"
+                  aria-label="Remover receta"
+                >
+                  ×
+                </Button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-1">
+              {badges?.time && (
                 <Badge variant="secondary" className="text-xs">
-                  <Users className="mr-1 h-3 w-3" />
-                  {servings}
+                  <Clock className="mr-1 h-3 w-3" />
+                  {badges.time}min
+                </Badge>
+              )}
+
+              {badges?.cost && (
+                <Badge variant="secondary" className="text-xs">
+                  <DollarSign className="mr-1 h-3 w-3" />
+                  ${badges.cost}
+                </Badge>
+              )}
+
+              {badges?.allergens && badges.allergens.length > 0 && (
+                <Badge variant={hasConflict ? "destructive" : "warning"} className="text-xs">
+                  <AlertTriangle className="mr-1 h-3 w-3" />
+                  {badges.allergens.length}
                 </Badge>
               )}
             </div>
 
-            {isEmpty ? (
-              <div className="flex flex-1 items-center justify-center text-center">
-                <p className="text-sm text-muted-foreground">Haz clic para elegir una receta</p>
-              </div>
-            ) : (
-              <div className="flex flex-1 flex-col gap-2">
-                <div className="flex items-start justify-between">
-                  <h4 className="text-sm font-medium leading-tight">{assignedRecipe.name}</h4>
-                  {onRemove && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onRemove();
-                      }}
-                      className="h-6 w-6 p-0"
-                      aria-label="Remover receta"
-                    >
-                      ×
-                    </Button>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap gap-1">
-                  {badges?.time && (
-                    <Badge variant="secondary" className="text-xs">
-                      <Clock className="mr-1 h-3 w-3" />
-                      {badges.time}min
-                    </Badge>
-                  )}
-
-                  {badges?.cost && (
-                    <Badge variant="secondary" className="text-xs">
-                      <DollarSign className="mr-1 h-3 w-3" />
-                      ${badges.cost}
-                    </Badge>
-                  )}
-
-                  {badges?.allergens && badges.allergens.length > 0 && (
-                    <Badge variant={hasConflict ? "destructive" : "warning"} className="text-xs">
-                      <AlertTriangle className="mr-1 h-3 w-3" />
-                      {badges.allergens.length}
-                    </Badge>
-                  )}
-                </div>
-
-                {hasConflict && <p className="text-xs text-destructive">⚠️ Contiene alérgenos</p>}
-              </div>
-            )}
+            {hasConflict && <p className="text-xs text-destructive">⚠️ Contiene alérgenos</p>}
           </div>
-        </Card>
-      </DialogTrigger>
-
-      <DialogContent className="w-[92vw] max-w-3xl border-0 bg-transparent p-0 shadow-none sm:w-[640px]">
-        <RecipeSelectorPanel
-          fixedMealType={mealType}
-          currentRecipe={assignedRecipe}
-          className="max-h-[80vh]"
-          onClear={() => {
-            onRemove?.();
-            setOpen(false);
-          }}
-          onSelect={(recipe) => {
-            onAssign(recipe);
-            setOpen(false);
-          }}
-        />
-      </DialogContent>
-    </Dialog>
+        )}
+      </div>
+    </Card>
   );
 }

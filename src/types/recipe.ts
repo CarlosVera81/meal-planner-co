@@ -9,8 +9,8 @@ export interface Ingredient {
 }
 
 export interface Recipe {
-  description: any;
-  instructions: any;
+  description?: string;
+  instructions?: string[];
   id: string;
   name: string;
   servingsBase: number;         // lo de antes, puede ser usado internamente
