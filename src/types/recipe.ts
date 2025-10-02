@@ -9,11 +9,16 @@ export interface Ingredient {
 }
 
 export interface Recipe {
+  description: any;
+  instructions: any;
   id: string;
   name: string;
-  servingsBase: number;
+  servingsBase: number;         // lo de antes, puede ser usado internamente
+  originalServingsBase?: number; // nueva propiedad para la regla de 3
+  servings: number;             // cantidad que puede cambiar dinámicamente
   timeMin: number;
   difficulty: 'Fácil' | 'Medio' | 'Difícil';
+  price?: number;
   tags: string[];
   allergens: string[];
   calories?: number;

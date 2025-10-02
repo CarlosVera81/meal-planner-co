@@ -150,7 +150,8 @@ function computeShoppingList(mealPlan: MealPlanState): ShoppingListItem[] {
     Object.values(day).forEach((entry) => {
       if (!entry) return;
       const { recipe, servings } = entry;
-      const ratio = servings / recipe.servingsBase;
+      const base = recipe.originalServingsBase ?? recipe.servingsBase ?? 4;
+      const ratio = servings / base;
       recipe.ingredients.forEach((ingredient) => {
         const key = getIngredientKey(ingredient);
         const scaledQuantity = ingredient.quantity * ratio;
@@ -174,7 +175,7 @@ function computeShoppingList(mealPlan: MealPlanState): ShoppingListItem[] {
   return Array.from(consolidated.entries()).map(([key, data]) => ({
     id: key,
     ingredient: data.ingredient,
-    totalQuantity: Math.round(data.totalQuantity * 100) / 100,
+    totalQuantity: Math.round(data.totalQuantity * 10) / 10,
     unit: data.ingredient.unit,
     category: data.ingredient.category,
     status: "todo",
