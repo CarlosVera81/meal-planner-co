@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { computeEstimatedCost } from "@/lib/cost";
 import { RecipeSelectorPanel } from "@/components/recipes/RecipeSelectorPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ type DayPlannerDrawerProps = {
   dayMeals: DayMeals;
   onOpenChange: (open: boolean) => void;
   onMealTypeChange: (mealType: MealType) => void;
-  onAssign: (mealType: MealType, recipe: Recipe) => void;
+  onAssign: (mealType: MealType, recipe: Recipe, servings: number) => void;
   onRemove: (mealType: MealType) => void;
   onServingsChange: (mealType: MealType, servings: number) => void;
   onNavigateDay: (direction: "prev" | "next") => void;
@@ -89,6 +90,7 @@ export function DayPlannerDrawer({
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh] overflow-hidden border-t border-border/60 bg-background/95 shadow-2xl backdrop-blur">
         <div className="flex h-full flex-col">
+          {/* HEADER: flechas + fecha + bloque de 3 comidas */}
           <DrawerHeader className="border-b bg-muted/40 pb-4 text-left">
             <div className="flex items-center justify-between gap-2">
               <Button
@@ -123,45 +125,61 @@ export function DayPlannerDrawer({
                 <span className="sr-only">Día siguiente ({nextDayLabel})</span>
               </Button>
             </div>
-          </DrawerHeader>
 
-          <div className="flex-1 overflow-y-auto px-4 pb-6">
-            <Tabs value={activeMealType} onValueChange={(value) => onMealTypeChange(value as MealType)} className="mt-4 space-y-4">
-              <TabsList className="grid grid-cols-3 gap-2 rounded-xl bg-muted/50 p-2">
-                {mealTypes.map((mealType) => {
-                  const entry = dayMeals[mealType];
-                  return (
-                    <TabsTrigger
-                      key={mealType}
-                      value={mealType}
-                      className={cn(
-                        "group flex flex-col items-start gap-1 rounded-lg border border-transparent px-3 py-2 text-left text-xs capitalize transition",
-                        "hover:border-border/70 hover:bg-background/70 hover:shadow-sm",
-                        `data-[state=active]:${mealTypeAccent[mealType]}`,
-                        "data-[state=active]:border-primary/40 data-[state=active]:text-foreground data-[state=active]:shadow-md",
-                      )}
-                    >
-                      <span className="text-sm font-semibold text-foreground">
-                        {mealTypeLabels[mealType]}
-                      </span>
-                      <span className="line-clamp-1 text-xs text-muted-foreground dark:text-slate-300 group-data-[state=active]:text-foreground/80 dark:group-data-[state=active]:text-slate-100">
+            {/* Bloques de comida (píldoras) justo debajo del título — clic cambia activeMealType */}
+            <div className="mt-3 flex items-center justify-center gap-3">
+              {mealTypes.map((mealType) => {
+                const entry = dayMeals[mealType];
+                const servings = entry?.servings ?? entry?.recipe?.servingsBase ?? undefined;
+                return (
+                  <button
+                    key={mealType}
+                    type="button"
+                    onClick={() => onMealTypeChange(mealType)}
+                    className={cn(
+                      "flex min-w-[150px] items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm transition",
+                      activeMealType === mealType ? "shadow-md ring-2 ring-primary" : "hover:shadow-sm hover:border-border/70",
+                      entry ? mealTypeAccent[mealType] : "bg-muted/30"
+                    )}
+                  >
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs font-semibold uppercase">{mealTypeLabels[mealType]}</span>
+                      <span className="text-sm font-medium line-clamp-1">
                         {entry ? entry.recipe.name : mealTypeHelpers[mealType]}
                       </span>
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
+                    </div>
+
+                    <div className="flex flex-col items-end">
+                      {servings !== undefined ? (
+                        <Badge variant="secondary" className="text-xs">
+                          <Users className="mr-1 h-3 w-3" />
+                          {servings}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">Agregar</Badge>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </DrawerHeader>
+
+          {/* CONTENT: tabs para el mealType seleccionado + selector */}
+          <div className="flex-1 overflow-y-auto px-4 pb-6 overscroll-contain">
+            {/* Tabs controla contenido, pero el header superior ya hace switch también */}
+            <Tabs value={activeMealType} onValueChange={(value) => onMealTypeChange(value as MealType)} className="mt-4 space-y-4">
+              <TabsList className="hidden" /> {/* ocultamos los triggers por defecto (usamos las píldoras) */}
 
               {mealTypes.map((mealType) => {
                 const entry = dayMeals[mealType];
                 const recipe = entry?.recipe;
-                const estimatedCost = recipe
-                  ? recipe.ingredients.reduce(
-                      (total, ingredient) => total + ((ingredient.pricePerUnit || 0) * ingredient.quantity) / 1000,
-                      0,
-                    )
-                  : 0;
                 const servings = entry?.servings ?? recipe?.servingsBase ?? 1;
+
+                const estimatedCost = recipe ? computeEstimatedCost(recipe, servings) : 0;
+                const base = recipe?.originalServingsBase ?? recipe?.servingsBase ?? 4;
+                const factor = servings / base;
+                const adjustedTime = recipe ? Math.round(recipe.timeMin * factor) : 0;
 
                 const handleServingsAdjust = (delta: number) => {
                   const next = Math.min(12, Math.max(1, servings + delta));
@@ -194,7 +212,7 @@ export function DayPlannerDrawer({
                           <div className="flex flex-wrap items-center gap-3">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-                              {recipe.timeMin} min
+                              {adjustedTime} min
                             </span>
                             <span className="flex items-center gap-1">
                               <Users className="h-3.5 w-3.5" aria-hidden="true" />
@@ -209,7 +227,7 @@ export function DayPlannerDrawer({
                             {estimatedCost > 0 && (
                               <span className="flex items-center gap-1">
                                 <DollarSign className="h-3.5 w-3.5" aria-hidden="true" />
-                                ${Math.round(estimatedCost)} aprox.
+                                ${Math.round(estimatedCost).toLocaleString('es-CL')} aprox.
                               </span>
                             )}
                             <div className="flex flex-wrap gap-1">
@@ -268,10 +286,15 @@ export function DayPlannerDrawer({
                       )}
                     </Card>
 
+                    {/* Recipe selector: pasamos currentServings y recogemos (recipe, servings) al seleccionar */}
                     <RecipeSelectorPanel
                       fixedMealType={mealType}
                       currentRecipe={recipe}
-                      onSelect={(selectedRecipe) => onAssign(mealType, selectedRecipe)}
+                      currentServings={servings}
+                      onSelect={(selectedRecipe, selectedServings) => {
+                        // IMPORTANTE: onSelect devuelve recipe + servings => los propagamos al parent
+                        onAssign(mealType, selectedRecipe, selectedServings);
+                      }}
                       onClear={recipe ? () => onRemove(mealType) : undefined}
                       showTitle={false}
                       compact

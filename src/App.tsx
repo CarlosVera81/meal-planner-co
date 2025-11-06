@@ -10,9 +10,11 @@ import Recipes from "./pages/Recipes";
 import ShoppingList from "./pages/ShoppingList";
 import NotFound from "./pages/NotFound";
 
+
 const queryClient = new QueryClient();
 
 const App = () => (
+  
   <QueryClientProvider client={queryClient}>
     <MealPlannerProvider>
       <TooltipProvider>
@@ -37,5 +39,6 @@ const App = () => (
     </MealPlannerProvider>
   </QueryClientProvider>
 );
+
 
 export default App;

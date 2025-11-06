@@ -9,8 +9,11 @@ export interface Ingredient {
 }
 
 export interface Recipe {
-  description?: string;
-  instructions?: string[];
+  mealType: any;
+  title: ReactNode;
+  image: string;
+  description: any;
+  instructions: any;
   id: string;
   name: string;
   servingsBase: number;         // lo de antes, puede ser usado internamente

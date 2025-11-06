@@ -1,17 +1,20 @@
-import { Clock, Users, DollarSign, AlertTriangle, Star } from "lucide-react";
+import { Clock, Users, DollarSign, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Recipe } from "@/types/recipe";
+import { computeEstimatedCost } from "@/lib/cost";
 
 interface RecipeCardProps {
   recipe: Recipe;
+  servings: number;
   onAdd?: (recipe: Recipe) => void;
   variant?: "default" | "compact";
   className?: string;
   isAdded?: boolean;
   disabled?: boolean;
+  onClick?: () => void;
 }
 
 const difficultyColors = {
@@ -22,22 +25,19 @@ const difficultyColors = {
 
 export function RecipeCard({
   recipe,
+  servings,
   onAdd,
   variant = "default",
   className,
   isAdded = false,
   disabled = false,
+  onClick,
 }: RecipeCardProps) {
-  const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.setData("application/json", JSON.stringify(recipe));
-    e.dataTransfer.effectAllowed = "copy";
-  };
-
-  const estimatedCost = recipe.ingredients.reduce((total, ingredient) => {
-    return total + ((ingredient.pricePerUnit || 0) * ingredient.quantity) / 1000;
-  }, 0);
-
+  const base = recipe.originalServingsBase ?? recipe.servingsBase ?? 4;
+  const estimatedCost = computeEstimatedCost(recipe, servings);
   const hasAllergens = recipe.allergens.length > 0;
+  const factor = servings / base;
+  const adjustedTime = Math.round(recipe.timeMin * factor);
 
   return (
     <Card
@@ -48,10 +48,10 @@ export function RecipeCard({
         className,
       )}
       draggable={!disabled}
-      onDragStart={handleDragStart}
-      role="button"
-      tabIndex={0}
-      aria-label={`Receta: ${recipe.name}. ${recipe.timeMin} minutos, ${recipe.difficulty}`}
+      onClick={(e) => {
+        if (disabled) return;
+        onClick?.();   // 👈 ejecuta el callback que vino desde RecipeLibrary
+      }}
     >
       <CardContent className="flex h-full flex-col p-4">
         {recipe.imageUrl && variant === "default" && (
@@ -73,7 +73,7 @@ export function RecipeCard({
           <div className="flex flex-wrap gap-1">
             <Badge variant="secondary" className="text-xs">
               <Clock className="h-3 w-3 mr-1" />
-              {recipe.timeMin} min
+              {adjustedTime} min
             </Badge>
 
             <Badge variant={difficultyColors[recipe.difficulty]} className="text-xs">
@@ -82,13 +82,13 @@ export function RecipeCard({
 
             <Badge variant="secondary" className="text-xs">
               <Users className="h-3 w-3 mr-1" />
-              {recipe.servingsBase}
+              {servings} {/* 👈 usa servings global */}
             </Badge>
 
             {estimatedCost > 0 && (
               <Badge variant="secondary" className="text-xs">
                 <DollarSign className="h-3 w-3 mr-1" />
-                ${Math.round(estimatedCost)}
+                ${estimatedCost}
               </Badge>
             )}
           </div>

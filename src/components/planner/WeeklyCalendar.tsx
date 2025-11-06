@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
+import { computeEstimatedCost } from "@/lib/cost";
 import { CalendarCell } from '@/components/calendar/CalendarCell';
-import { DayPlannerDrawer } from '@/components/planner/DayPlannerDrawer';
+import { DayPlannerDialog } from '@/components/planner/DayPlannerDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -181,12 +182,6 @@ export function WeeklyCalendar({
 
   const formatCurrency = (value: number) => `$${Math.round(value).toLocaleString('es-CL')}`;
 
-  const computeRecipeCost = (recipe: Recipe) =>
-    recipe.ingredients.reduce(
-      (total, ingredient) => total + ((ingredient.pricePerUnit || 0) * ingredient.quantity) / 1000,
-      0,
-    );
-
   const capitalize = (value: string) => (value ? value.charAt(0).toUpperCase() + value.slice(1) : value);
 
   const buildWeekShareBlock = (weekIndex: number) => {
@@ -207,7 +202,8 @@ export function WeeklyCalendar({
         if (entry?.recipe) {
           dayAssigned += 1;
           weekAssignedMeals += 1;
-          const recipeCost = computeRecipeCost(entry.recipe);
+          const mealServings = entry.servings ?? entry.recipe.servingsBase ?? 4;
+          const recipeCost = computeEstimatedCost(entry.recipe, mealServings);
           weekCost += recipeCost;
           const servingsInfo = entry.servings ? ` (${entry.servings} porciones)` : '';
           const costInfo = recipeCost > 0 ? ` · ${formatCurrency(recipeCost)}` : '';
@@ -305,7 +301,15 @@ export function WeeklyCalendar({
                     size="sm"
                     className="gap-2"
                   >
-                    <Share2 className="h-4 w-4" />
+                    <span className="[&>svg]:h-5 [&>svg]:w-5">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 448 512">
+                        <path
+                          d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7 .9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
+                      </svg>
+                    </span>
                     Compartir
                   </Button>
                 </DialogTrigger>
@@ -362,13 +366,6 @@ export function WeeklyCalendar({
                 }}
               >
                 Semana 1
-                <Badge variant="secondary" className="ml-2">
-                  {Object.keys(mealPlan).filter(date => {
-                    const day = new Date(date);
-                    const week1Start = startOfWeek(startDate, { weekStartsOn: 1 });
-                    return day >= week1Start && day < addDays(week1Start, 7);
-                  }).reduce((total, date) => total + Object.keys(mealPlan[date]).length, 0)}
-                </Badge>
               </Button>
               <Button
                 variant={selectedWeek === 1 ? "default" : "outline"}
@@ -379,13 +376,7 @@ export function WeeklyCalendar({
                 }}
               >
                 Semana 2
-                <Badge variant="secondary" className="ml-2">
-                  {Object.keys(mealPlan).filter(date => {
-                    const day = new Date(date);
-                    const week2Start = addDays(startOfWeek(startDate, { weekStartsOn: 1 }), 7);
-                    return day >= week2Start && day < addDays(week2Start, 7);
-                  }).reduce((total, date) => total + Object.keys(mealPlan[date]).length, 0)}
-                </Badge>
+
               </Button>
             </div>
             
@@ -456,25 +447,35 @@ export function WeeklyCalendar({
                 <div className="flex items-center justify-center py-4 font-medium text-sm bg-muted rounded-md">
                   {mealTypeLabels[mealType]}
                 </div>
-                {weekDays.map((day, dayIndex) => {
+                {weekDays.map((day, index) => {
                   const dateKey = format(day, 'yyyy-MM-dd');
                   const dayMeal = mealPlan[dateKey]?.[mealType];
+                  
+                  // Calcula valores escalados
+                  const base = dayMeal?.recipe?.originalServingsBase ?? dayMeal?.recipe?.servingsBase ?? 4;
+                  const servings = dayMeal?.servings ?? base;
+                  const factor = servings / base;
+                  
+                  const scaledTime = dayMeal?.recipe ? Math.round(dayMeal.recipe.timeMin * factor) : undefined;
+                  const scaledCost = dayMeal?.recipe 
+                    ? computeEstimatedCost(dayMeal.recipe, servings)
+                    : undefined;
                   
                   return (
                     <CalendarCell
                       key={`${dateKey}-${mealType}`}
                       mealType={mealType}
                       assignedRecipe={dayMeal?.recipe}
-                      servings={dayMeal?.servings}
+                      servings={servings}
                       badges={dayMeal?.recipe ? {
-                        time: dayMeal.recipe.timeMin,
-                        cost: Math.round(dayMeal.recipe.ingredients.reduce((sum, ing) => 
-                          sum + (ing.pricePerUnit || 0) * ing.quantity / 1000, 0)),
+                        time: scaledTime,
+                        cost: scaledCost,
                         allergens: dayMeal.recipe.allergens
                       } : undefined}
+                      onAssign={(recipe, newServings) => handleRecipeAssign(dateKey, mealType, recipe, newServings)}
                       onRemove={() => handleRecipeRemove(dateKey, mealType)}
-                      onOpen={() => handleOpenDayPlanner(dayIndex, mealType)}
-                      hasConflict={dayMeal?.recipe?.allergens?.includes('gluten')} // Mock conflict
+                      hasConflict={dayMeal?.recipe?.allergens?.includes('gluten')}
+                      onOpen={() => handleOpenDayPlanner(index, mealType)}
                     />
                   );
                 })}
@@ -485,7 +486,7 @@ export function WeeklyCalendar({
       </Card>
 
       {selectedDay && selectedDateKey && (
-        <DayPlannerDrawer
+        <DayPlannerDialog
           open={dayPlannerOpen}
           date={selectedDay}
           activeMealType={dayPlannerMealType}
@@ -496,19 +497,20 @@ export function WeeklyCalendar({
             }
           }}
           onMealTypeChange={(mealType) => setDayPlannerMealType(mealType)}
-          onAssign={(mealType, recipe) => {
+          onAssign={(mealType, recipe, servings) => {
             handleRecipeAssign(selectedDateKey, mealType, recipe);
-
+            /*
             const upcomingMeals = { ...(mealPlan[selectedDateKey] ?? {}) };
             upcomingMeals[mealType] = {
               recipe,
-              servings: recipe.servingsBase,
+              servings,
             };
 
             const nextMealType = mealTypes.find((type) => !upcomingMeals[type]);
             if (nextMealType) {
               setDayPlannerMealType(nextMealType);
             }
+            */
           }}
           onRemove={(mealType) => {
             handleRecipeRemove(selectedDateKey, mealType);
@@ -565,10 +567,10 @@ export function WeeklyCalendar({
               ${Object.values(mealPlan).reduce((total, dayMeals) => {
                 return total + Object.values(dayMeals).reduce((dayTotal, meal) => {
                   if (!meal) return dayTotal;
-                  return dayTotal + meal.recipe.ingredients.reduce((sum, ing) => 
-                    sum + (ing.pricePerUnit || 0) * ing.quantity / 1000, 0);
+                  const mealServings = meal.servings ?? meal.recipe.servingsBase ?? 4;
+                  return dayTotal + computeEstimatedCost(meal.recipe, mealServings);
                 }, 0);
-              }, 0).toFixed(0)}
+              }, 0).toLocaleString('es-CL')}
             </div>
             <p className="text-sm text-muted-foreground">
               Costo estimado total
@@ -584,7 +586,7 @@ export function WeeklyCalendar({
                   if (!meal) return dayTotal;
                   return dayTotal + (meal.recipe.calories || 0);
                 }, 0);
-              }, 0) / Math.max(getTotalMeals(), 1))}
+              }, 0) / Math.max(getTotalMeals(), 1)).toLocaleString('es-CL')}
             </div>
             <p className="text-sm text-muted-foreground">
               Calorías promedio/comida
