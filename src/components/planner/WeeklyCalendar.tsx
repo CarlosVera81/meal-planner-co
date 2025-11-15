@@ -491,6 +491,7 @@ export function WeeklyCalendar({
           date={selectedDay}
           activeMealType={dayPlannerMealType}
           dayMeals={selectedDayMeals}
+          weekMeals={mealPlan}
           onOpenChange={(open) => {
             if (!open) {
               closeDayPlanner();
