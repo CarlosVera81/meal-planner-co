@@ -21,11 +21,6 @@ const mainItems = [
   { title: "Despensa", url: "/pantry", icon: Package },
 ];
 
-const secondaryItems = [
-  { title: "Preferencias", url: "/preferences", icon: Settings },
-  { title: "Compartir", url: "/share", icon: Share2 },
-  { title: "Reportes", url: "/reports", icon: BarChart3 },
-];
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -76,25 +71,6 @@ export function AppSidebar() {
                     aria-label={item.title}
                     className={getNavCls}
                   >
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    {!collapsed && <span>{item.title}</span>}
-                  </NavLink>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Herramientas */}
-        <SidebarGroup
-          className={cn("transition-[padding] duration-300", collapsed && "!px-1 !pt-0 !pb-1")}
-        >
-          {!collapsed && <SidebarGroupLabel>Herramientas</SidebarGroupLabel>}
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {secondaryItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <NavLink to={item.url} end aria-label={item.title} className={getNavCls}>
                     <item.icon className="h-4 w-4 shrink-0" />
                     {!collapsed && <span>{item.title}</span>}
                   </NavLink>
