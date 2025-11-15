@@ -85,13 +85,13 @@ export function ShoppingList({
 
   if (items.length === 0) {
     return (
-      <Card>
+      <Card className="border-[#E5E7EB] bg-white">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium text-muted-foreground mb-2">
+          <ShoppingCart className="h-12 w-12 text-[#9CA3AF] mb-4" />
+          <h3 className="text-lg font-medium text-[#4B5563] mb-2">
             Lista vacía
           </h3>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-[#4B5563] mb-4">
             Agrega recetas al planificador para generar tu lista de compras automáticamente
           </p>
         </CardContent>
@@ -102,11 +102,11 @@ export function ShoppingList({
   return (
     <div className="space-y-6">
       {/* Header with Stats */}
-      <Card>
+      <Card className="border-[#E5E7EB] bg-white shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-[#1F2937]">
+              <ShoppingCart className="h-5 w-5 text-[#2F80ED]" />
               Lista de Compras
             </CardTitle>
             <div className="flex gap-2">
@@ -114,7 +114,7 @@ export function ShoppingList({
                 variant="outline"
                 size="sm"
                 onClick={() => onExport?.('whatsapp')}
-                className="gap-2"
+                className="gap-2 bg-[#25D366] text-white border-[#25D366] hover:bg-[#20BA5A] hover:border-[#20BA5A] hover:text-white focus:ring-2 focus:ring-[#25D366]"
               >
                 <span className="[&>svg]:h-5 [&>svg]:w-5">
                   <svg
@@ -131,7 +131,7 @@ export function ShoppingList({
                 variant="outline"
                 size="sm"
                 onClick={() => onExport?.('pdf')}
-                className="gap-2"
+                className="gap-2 bg-[#8B5CF6] text-white border-[#8B5CF6] hover:bg-[#7C3AED] hover:border-[#7C3AED] hover:text-white focus:ring-2 focus:ring-[#8B5CF6]"
               >
                 <Download className="h-4 w-4" />
                 Exportar
@@ -141,26 +141,26 @@ export function ShoppingList({
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-2xl font-bold text-[#2F80ED]">
                 {stats.completed}/{stats.total}
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-[#4B5563]">
                 Productos comprados
               </p>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-success">
+              <div className="text-2xl font-bold text-[#166534]">
                   ${Math.round(stats.totalCost).toLocaleString('es-CL')}
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-[#4B5563]">
                 Costo estimado
               </p>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-warning">
+              <div className="text-2xl font-bold text-[#854D0E]">
                 {Math.round(stats.progress)}%
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-[#4B5563]">
                 Completado
               </p>
             </div>
@@ -171,12 +171,12 @@ export function ShoppingList({
       {/* Shopping List by Category */}
       <div className="grid gap-4">
         {Object.entries(groupedItems).map(([category, categoryItems]) => (
-          <Card key={category}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
+          <Card key={category} className="border-[#E5E7EB] bg-white shadow-sm">
+            <CardHeader className="pb-3 border-b border-[#E2E8F0]">
+              <CardTitle className="text-lg flex items-center gap-2 text-[#1F2937]">
                 <span className="text-xl">{categoryIcons[category]}</span>
                 {category}
-                <Badge variant="secondary">
+                <Badge variant="secondary" className="bg-[#F1F5F9] text-[#4B5563] border-[#E5E7EB]">
                   {categoryItems.filter(item => item.status === 'done').length}/
                   {categoryItems.length}
                 </Badge>
@@ -197,13 +197,13 @@ export function ShoppingList({
                         <label 
                           htmlFor={item.id}
                           className={`block text-sm font-medium cursor-pointer ${
-                            item.status === 'done' ? 'line-through text-muted-foreground' : ''
+                            item.status === 'done' ? 'line-through text-[#9CA3AF]' : 'text-[#1F2937]'
                           }`}
                         >
                           {item.ingredient.name}
                         </label>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-sm text-[#4B5563]">
                             {item.totalQuantity} {item.unit}
                           </span>
                           {item.ingredient.pricePerUnit && (() => {
@@ -218,31 +218,31 @@ export function ShoppingList({
                             }
                             
                             return (
-                              <Badge variant="outline">
+                              <Badge variant="outline" className="border-[#86EFAC] bg-[#E6F9E6] text-[#166534]">
                                 ${Math.ceil(itemCost).toLocaleString('es-CL')}
                               </Badge>
                             );
                           })()}
                           {item.recipes.length > 1 && (
-                            <Badge variant="secondary">
+                            <Badge variant="secondary" className="bg-[#E0F2FE] text-[#075985] border-[#38BDF8]">
                               {item.recipes.length} recetas
                             </Badge>
                           )}
                         </div>
                         {item.recipes.length > 0 && (
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-[#4B5563] mt-1">
                             Para: {item.recipes.join(', ')}
                           </p>
                         )}
                         {item.note && (
-                          <p className="text-xs text-muted-foreground mt-1 italic">
+                          <p className="text-xs text-[#4B5563] mt-1 italic">
                             {item.note}
                           </p>
                         )}
                       </div>
                     </div>
                     {index < categoryItems.length - 1 && (
-                      <Separator className="mt-3" />
+                      <Separator className="mt-3 bg-[#E2E8F0]" />
                     )}
                   </div>
                 ))}

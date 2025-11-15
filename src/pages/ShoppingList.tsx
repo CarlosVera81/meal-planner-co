@@ -56,20 +56,20 @@ export default function ShoppingListPage() {
     <div className="container max-w-4xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Lista de Compras</h1>
-          <p className="text-muted-foreground">Generada automáticamente desde tu planificación de comidas</p>
+          <h1 className="text-3xl font-bold text-[#1F2937]">Lista de Compras</h1>
+          <p className="text-[#4B5563]">Generada automáticamente desde tu planificación de comidas</p>
         </div>
 
-        <Button onClick={handleGenerateList} className="gap-2">
+        <Button onClick={handleGenerateList} className="gap-2 bg-[#2F80ED] hover:bg-[#1C64CC] focus:ring-2 focus:ring-[#2F80ED] text-white">
           <RefreshCw className="h-4 w-4" />
           Generar Lista
         </Button>
       </div>
 
       {!hasPlannedMeals && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
+        <Alert className="border-[#FCD34D] bg-[#FEF7C3]">
+          <AlertCircle className="h-4 w-4 text-[#854D0E]" />
+          <AlertDescription className="text-[#854D0E]">
             No hay recetas planificadas. Ve al <strong>Planificador</strong> y agrega algunas recetas para generar tu lista de compras automáticamente.
           </AlertDescription>
         </Alert>

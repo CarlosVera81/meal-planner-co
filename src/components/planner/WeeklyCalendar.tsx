@@ -289,7 +289,7 @@ export function WeeklyCalendar({
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateShoppingList}
-                className="gap-2"
+                className="gap-2 bg-[#2F80ED] text-white border-[#2F80ED] hover:bg-[#1C64CC] hover:border-[#1C64CC] hover:text-white focus:ring-2 focus:ring-[#2F80ED]"
               >
                 <ShoppingCart className="h-4 w-4" />
                 Generar Lista
@@ -299,7 +299,7 @@ export function WeeklyCalendar({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 bg-[#25D366] text-white border-[#25D366] hover:bg-[#20BA5A] hover:border-[#20BA5A] hover:text-white focus:ring-2 focus:ring-[#25D366]"
                   >
                     <span className="[&>svg]:h-5 [&>svg]:w-5">
                       <svg
@@ -385,7 +385,7 @@ export function WeeklyCalendar({
                 variant="outline"
                 size="sm"
                 onClick={handleDuplicateWeek}
-                className="gap-2"
+                className="gap-2 bg-[#8B5CF6] text-white border-[#8B5CF6] hover:bg-[#7C3AED] hover:border-[#7C3AED] hover:text-white focus:ring-2 focus:ring-[#8B5CF6]"
               >
                 <Copy className="h-4 w-4" />
                 Duplicar Semana
@@ -394,7 +394,7 @@ export function WeeklyCalendar({
                 variant="outline"
                 size="sm"
                 onClick={clearMealPlan}
-                className="gap-2"
+                className="gap-2 bg-[#EF4444] text-white border-[#EF4444] hover:bg-[#DC2626] hover:border-[#DC2626] hover:text-white focus:ring-2 focus:ring-[#EF4444]"
               >
                 <RotateCcw className="h-4 w-4" />
                 Limpiar

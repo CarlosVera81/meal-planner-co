@@ -18,7 +18,6 @@ const mainItems = [
   { title: "Plan", url: "/", icon: Calendar },
   { title: "Recetas", url: "/recipes", icon: ChefHat },
   { title: "Lista de Compras", url: "/shopping", icon: ShoppingCart },
-  { title: "Despensa", url: "/pantry", icon: Package },
 ];
 
 
